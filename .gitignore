@@ -17,3 +17,7 @@ yarn-error.log*
 # operating-system files
 .DS_Store
 Thumbs.db
+
+# Source library and oversized source videos are not deployment assets.
+/Images and videos of Interiors/
+/public/media/sections/walkthrough-renders/video-02.mp4
