@@ -1,0 +1,34 @@
+"use client";
+
+import { FormEvent, useState } from "react";
+import styles from "./luu-consultant.module.css";
+
+type Message = { from: "luu" | "user"; text: string };
+type Brief = { city: string; projectType: string; bedrooms: string; style: string; budget: string; timeline: string; inspiration: string; name: string; phone: string; email: string };
+const prompts: Array<{ key: keyof Brief; question: string; options?: string[] }> = [
+  { key: "city", question: "Lovely. What city is the project in?" },
+  { key: "projectType", question: "Is it an apartment, villa, office, retail or hospitality space?", options: ["Apartment", "Villa", "Office", "Retail"] },
+  { key: "bedrooms", question: "How many bedrooms or how large is the space?", options: ["2 BHK", "3 BHK", "4 BHK", "Commercial"] },
+  { key: "style", question: "What mood feels most like you?", options: ["Warm minimal", "Contemporary", "Classic", "Not sure yet"] },
+  { key: "budget", question: "What investment range should we design around?", options: ["Under ₹5 lakh", "₹5–10 lakh", "₹10–20 lakh", "Above ₹20 lakh"] },
+  { key: "timeline", question: "When would you like the space to be ready?", options: ["Within 3 months", "3–6 months", "6+ months", "Exploring"] },
+  { key: "inspiration", question: "Is there anything you would like us to keep in mind—an image, material or way you want the space to feel?" },
+  { key: "name", question: "Thank you. May I have your name so our studio can prepare a thoughtful next step?" },
+  { key: "phone", question: "And the best phone number for the studio to reach you?" },
+  { key: "email", question: "Finally, what email should we send your consultation note to?" },
+];
+const intro = "Hello, I’m Luu — The Living Edit’s design consultant. Tell me about the space you’re thinking about, or ask anything about our interiors, process and design services.";
+const topic = /(interior|design|home|apartment|villa|office|retail|hotel|room|kitchen|bedroom|bathroom|living|furniture|plan|autocad|revit|3d|render|walkthrough|budget|cost|timeline|material|style|service|project|bhk)/i;
+
+export function LuuConsultant() {
+  const [open, setOpen] = useState(false); const [text, setText] = useState(""); const [step, setStep] = useState(-1); const [thinking, setThinking] = useState(false); const [done, setDone] = useState(false);
+  const [brief, setBrief] = useState<Brief>({ city: "", projectType: "", bedrooms: "", style: "", budget: "", timeline: "", inspiration: "", name: "", phone: "", email: "" });
+  const [messages, setMessages] = useState<Message[]>([{ from: "luu", text: intro }]);
+  const active = step >= 0 ? prompts[step] : undefined;
+  function append(userText: string, luuText: string) { setMessages((current) => [...current, { from: "user", text: userText }, { from: "luu", text: luuText }]); }
+  function begin() { setStep(0); append("I’d like to begin a project.", prompts[0].question); }
+  function answer(value: string) { if (!active || thinking) return; const nextBrief = { ...brief, [active.key]: value }; setBrief(nextBrief); const next = step + 1; setThinking(true); window.setTimeout(async () => { setThinking(false); if (next < prompts.length) { setStep(next); append(value, prompts[next].question); return; } setStep(next); append(value, "Thank you — I have everything I need. I’m sending your design brief to our studio now."); const response = await fetch("/api/luu/ticket", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...nextBrief, services: [nextBrief.projectType || "Interior consultation"], conversation: messages }) }); if (response.ok) setDone(true); else append("", "I’m sorry, I couldn’t save that just now. Please use the enquiry form below and our studio will still be glad to help."); }, 420); }
+  async function ask(event: FormEvent) { event.preventDefault(); const value = text.trim(); if (!value || thinking) return; setText(""); if (active) return answer(value); if (!topic.test(value)) return append(value, "I specialize in helping clients with interior design and our studio services."); setThinking(true); setMessages((current) => [...current, { from: "user", text: value }]); try { const response = await fetch("/api/luu", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: "chat", message: value }) }); const data = await response.json(); setMessages((current) => [...current, { from: "luu", text: response.ok ? data.reply : "I can help with interiors, planning, visualisation and our studio process. Would you like to begin a project?" }]); } finally { setThinking(false); } }
+  function reset() { setStep(-1); setDone(false); setBrief({ city: "", projectType: "", bedrooms: "", style: "", budget: "", timeline: "", inspiration: "", name: "", phone: "", email: "" }); setMessages([{ from: "luu", text: intro }]); }
+  return <><button className={styles.launcher} onClick={() => { setOpen(true); reset(); }} aria-label="Open Luu, The Living Edit design consultant"><span>L</span><b>Talk to Luu</b><i>↗</i></button>{open && <div className={styles.backdrop}><section className={styles.panel} role="dialog" aria-modal="true" aria-label="Luu design consultant"><header><div><p>The Living Edit</p><h2>Luu <em>design consultant</em></h2></div><button onClick={() => setOpen(false)} aria-label="Close Luu">×</button></header>{done ? <div className={styles.done}><span>Consultation received</span><h3>Thank you, {brief.name}.</h3><p>Your brief is with the studio. We’ll be in touch shortly.</p><button onClick={() => setOpen(false)}>Close</button></div> : <div className={styles.conversation}><div className={styles.messages}>{messages.map((message, index) => message.text && <p className={message.from === "luu" ? styles.luu : styles.user} key={`${message.from}-${index}`}>{message.text}</p>)}{thinking && <p className={`${styles.luu} ${styles.thinking}`}><i /><i /><i /></p>}</div>{active?.options && <div className={styles.suggestions}>{active.options.map((option) => <button key={option} onClick={() => answer(option)}>{option}</button>)}</div>}{step < 0 && <div className={styles.suggestions}><button onClick={begin}>Start a project</button><button onClick={() => append("How we work", "We listen first, develop a clear concept, detail the decisions, then coordinate a considered execution.")}>How we work</button><button onClick={() => append("Explore services", "We offer residential interiors, commercial design, 2D planning, 3D visualisation, AutoCAD, Revit, 3ds Max and walkthrough renders.")}>Explore services</button></div>}<form onSubmit={ask}><input value={text} onChange={(event) => setText(event.target.value)} placeholder={active ? "Your answer…" : "Ask Luu about your space…"} /><button type="submit" disabled={thinking}>↑</button></form></div>}</section></div>}</>;
+}

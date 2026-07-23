@@ -1,0 +1,20 @@
+import Image from "next/image";
+import { LazyVideo } from "@/components/lazy-video";
+import type { EditorialPage } from "@/lib/editorial-content";
+import { mediaFor } from "@/lib/editorial-media";
+import { videoMedia } from "@/lib/site-media";
+
+export function EditorialPageTemplate({ page, sectionLabel }: { page: EditorialPage; sectionLabel: string }) {
+  const media = mediaFor(page.slug); const videos = videoMedia[page.slug] ?? []; const process = ["Listen", "Develop", "Detail", "Deliver"];
+  const film = (video: string, index: number) => <LazyVideo key={video} cover className="editorialVideo" src={video} poster={media[index] ?? media[0]} label={`${page.title} motion study ${index + 1}`}><p>{videos.length > 1 ? `Walkthrough ${index + 1}` : "Motion study"}</p><strong>{index === 0 ? "Video-ready" : "Designed in"}<br /><i>{index === 0 ? "by design." : "motion."}</i></strong><small>{index === 0 ? "A cinematic pass through the design." : "A second perspective on atmosphere and flow."}</small></LazyVideo>;
+  return <main className="editorialPage">
+    <section className="editorialHero"><p className="eyebrow">{page.kicker}</p><h1>{page.title}</h1><p className="lede">{page.subtitle}</p><Image src={media[0]} alt={`${page.title} design study`} width={1376} height={768} loading="eager" sizes="(max-width: 700px) 100vw, 80vw" /></section>
+    <section className="editorialIntro"><p className="eyebrow">01 · Overview</p><div><h2>{page.overview}</h2><p>{page.description}</p></div></section>
+    <section className="editorialBand"><p className="eyebrow">02 · Our process</p><div className="editorialProcess">{process.map((step, index) => <article key={step}><span>{String(index + 1).padStart(2, "0")}</span><h3>{step}</h3><p>{index === 0 ? "Understand the brief, site and people behind it." : index === 1 ? "Shape the design through plans, materials and visual studies." : index === 2 ? "Resolve the decisions that protect quality at site." : "Coordinate a considered, confident handover."}</p></article>)}</div></section>
+    <section className="editorialGallery"><div><p className="eyebrow">03 · Design studies</p><h2>Every detail has a <i>reason.</i></h2></div><div className="editorialImageGrid">{media.map((image, index) => <Image key={image} src={image} alt={`${page.title} inspiration ${index + 1}`} width={1376} height={768} sizes="(max-width: 700px) 43vw, (max-width: 1200px) 40vw, 36vw" loading="lazy" style={{ objectFit: "cover", objectPosition: index === 0 ? "50% 50%" : "50% 45%" }} />)}</div></section>
+    <section className="editorialSplit"><div><p className="eyebrow">04 · What we consider</p><h2>The practical side of <i>beauty.</i></h2><ul>{page.focus.map((item) => <li key={item}>{item}<span>↗</span></li>)}</ul></div>{videos.length > 1 ? <div className="editorialSplitNote"><span>Visual journey</span><p>Explore each walkthrough in its own full-frame study below.</p></div> : film(videos[0] ?? "/media/videos/3d-visuals.mp4", 0)}</section>{videos.length > 1 && <section className="walkthroughFilmSection"><div><p className="eyebrow">05 · Walkthrough films</p><h2>See the space<br /><i>unfold.</i></h2></div><div className="editorialVideoStack">{videos.map(film)}</div></section>}
+    <section className="editorialBenefits"><p className="eyebrow">05 · The value</p><h2>A more considered<br /><i>way forward.</i></h2><div>{page.benefits.map((benefit, index) => <article key={benefit}><span>{String(index + 1).padStart(2, "0")}</span><p>{benefit}</p></article>)}</div></section>
+    <section className="editorialFaq"><p className="eyebrow">06 · Questions, answered</p><h2>Clarity before<br /><i>we begin.</i></h2><div>{page.faqs.map((faq) => <details key={faq.question}><summary>{faq.question}<span>+</span></summary><p>{faq.answer}</p></details>)}</div></section>
+    <section className="editorialCta" id="quote"><p className="eyebrow light">The Living Edit · {sectionLabel}</p><h2>Let&apos;s make it<br /><i>feel right.</i></h2><p>Share a little about your project and our studio will be in touch within two business days.</p><a href="/#quote">Begin your project <span>→</span></a></section>
+  </main>;
+}

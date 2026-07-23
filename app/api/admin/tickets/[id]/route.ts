@@ -1,0 +1,4 @@
+import { adminAuthorized, unauthorized } from "@/lib/admin-guard";
+import { createSupabaseAdminClient } from "@/lib/supabase-server";
+import { NextResponse } from "next/server";
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) { if (!await adminAuthorized()) return unauthorized(); const { id } = await params; const status = (await request.formData()).get("status"); if (!['New', 'Contacted', 'Meeting Scheduled', 'Closed'].includes(String(status))) return NextResponse.json({ error: "Invalid ticket status." }, { status: 400 }); const { error } = await createSupabaseAdminClient().from("client_tickets").update({ status }).eq("id", id); if (error) return NextResponse.json({ error: error.message }, { status: 500 }); return NextResponse.redirect(new URL("/admin#tickets", request.url), 303); }
